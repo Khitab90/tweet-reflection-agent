@@ -34,7 +34,7 @@ const StateAnnotation = Annotation.Root({
   }),
 });
 
-type State = typeof StateAnnotation.State;
+export type State = typeof StateAnnotation.State;
 
 function buildLLM() {
   return new ChatGroq({
@@ -132,14 +132,14 @@ async function routerNode(state: State): Promise<Partial<State>> {
 }
 
 // Skip reflect on the last iteration unless maxIter=1 (single iteration always shows critique)
-function afterGenerateEdge(state: State): string {
+export function afterGenerateEdge(state: State): string {
   if (state.curIter >= state.maxIter && state.maxIter > 1) {
     return 'router';
   }
   return 'reflect';
 }
 
-function routerEdge(state: State): string {
+export function routerEdge(state: State): string {
   if (state.routerDecision === 'DONE' || state.curIter >= state.maxIter) {
     return END;
   }
