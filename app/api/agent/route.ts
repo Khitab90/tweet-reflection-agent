@@ -3,7 +3,7 @@ import { buildGraph, AgentEvent } from "@/lib/agent";
 import { HumanMessage } from "@langchain/core/messages";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const { topic, tone, maxIter } = await req.json();
