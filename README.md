@@ -50,7 +50,10 @@ start → generate → reflect → router → generate → reflect → router �
 | LLM | Groq — `llama-3.3-70b-versatile` (free tier) |
 | LLM client | `@langchain/groq`, `@langchain/core` |
 | Streaming | Server-Sent Events (SSE) via Next.js Route Handler |
-| Deployment | Vercel (Node.js runtime, `maxDuration: 120s`) |
+| Testing | Vitest, `@vitest/coverage-v8` |
+| Linting | ESLint (`eslint-config-next`, `eslint-plugin-security`) |
+| CI/CD | GitHub Actions (lint + test + build), CodeQL, Dependabot |
+| Deployment | Vercel (Node.js runtime, `maxDuration: 60s`) |
 
 ---
 
@@ -58,22 +61,35 @@ start → generate → reflect → router → generate → reflect → router �
 
 ```
 tweet-reflection-agent/
+├── .github/
+│   ├── dependabot.yml           # Weekly dependency updates (react/react-dom and
+│   │                            # @langchain/* grouped to update in lockstep)
+│   └── workflows/
+│       ├── ci.yml               # Lint + test (with coverage) + build on every push/PR
+│       └── codeql.yml           # JS/TS SAST scanning
 ├── app/
-│   ├── layout.tsx              # IBM Plex Mono font, metadata
-│   ├── page.tsx                # Entry point → renders <TweetAgent />
-│   ├── globals.css             # Animations: blink, fadeUp, glowPulse, spinSlow
-│   └── api/agent/route.ts      # POST endpoint — runs LangGraph graph, streams SSE
+│   ├── layout.tsx               # IBM Plex Mono font, metadata
+│   ├── page.tsx                 # Entry point → renders <TweetAgent />
+│   ├── globals.css              # Animations: blink, fadeUp, glowPulse, spinSlow
+│   └── api/agent/
+│       ├── route.ts             # POST endpoint — validation, rate limiting, streams SSE
+│       └── route.test.ts        # Validation + error-path tests
 ├── components/
-│   ├── TweetAgent.tsx          # Root state container, SSE consumer
-│   ├── AppHeader.tsx           # Sticky header: branding, status pill, iter counter
-│   ├── LeftPanel.tsx           # Prompt textarea, iterations stepper, tone selector, run button
-│   ├── RunLog.tsx              # Timeline of generate/reflect steps with streaming
-│   ├── WorkflowGraph.tsx       # SVG diagram with live glow rings on active node
-│   └── FinalPost.tsx           # Final tweet card with char count and copy button
+│   ├── TweetAgent.tsx           # Root state container, SSE consumer
+│   ├── AppHeader.tsx            # Sticky header: branding, status pill, iter counter
+│   ├── LeftPanel.tsx            # Prompt textarea, iterations stepper, tone selector, run button, error banner
+│   ├── RunLog.tsx               # Timeline of generate/reflect steps with streaming
+│   ├── WorkflowGraph.tsx        # SVG diagram with live glow rings on active node
+│   └── FinalPost.tsx            # Final tweet card with char count and copy button
 ├── lib/
-│   └── agent.ts                # LangGraph graph: nodes, edges, state, SSE emit
-├── CLAUDE.md                   # Coding behavioral guidelines
-└── .env.local.example          # Environment variable template
+│   ├── agent.ts                 # LangGraph graph: nodes, edges, state, SSE emit
+│   ├── agent.test.ts            # Routing logic + LLM-failure/fallback tests
+│   ├── rateLimit.ts             # In-memory per-IP rate limiter
+│   └── rateLimit.test.ts
+├── eslint.config.mjs
+├── vitest.config.ts
+├── CLAUDE.md                    # Coding behavioral guidelines
+└── .env.local.example           # Environment variable template
 ```
 
 ---
@@ -139,6 +155,36 @@ The UI shows a live `X / 280` counter that turns red if exceeded.
 
 ---
 
+## Security & Reliability
+
+- **Rate limiting** — `lib/rateLimit.ts` caps each IP to 5 requests/minute on `/api/agent` (in-memory fixed window; sufficient for a single-instance deployment). Exceeding it returns `429` with a `Retry-After` header.
+- **Input validation** — topic is required, capped at 500 characters (server-enforced + client `maxLength`), and malformed JSON bodies return `400` instead of crashing the route.
+- **Fail-fast misconfiguration check** — missing `GROQ_API_KEY` returns a clear `500` instead of a cryptic error surfacing from deep inside the LLM SDK.
+- **User-facing error surfacing** — API errors, SSE `error` events, and clipboard-copy failures all show a message in the UI rather than only logging to the console.
+- **GitHub security tooling** — secret scanning + push protection, Dependabot vulnerability alerts and version-update PRs (grouped for `react`/`react-dom` and `@langchain/*` so peer-dependency bumps land together), CodeQL SAST scanning on every push/PR.
+- **Branch protection** — `main` blocks force-pushes and branch deletion.
+
+---
+
+## Testing
+
+Vitest, no `jsdom`/React Testing Library yet — current scope is pure logic (routing decisions, rate limiter) and API route validation/error paths, not component rendering.
+
+```bash
+npm test              # run once
+npm run test:watch    # watch mode
+npm run test:coverage # with coverage report
+```
+
+24 tests across 3 files:
+- `lib/rateLimit.test.ts` — window limits, reset, independent keys
+- `lib/agent.test.ts` — `afterGenerateEdge`/`routerEdge` branch logic; `generateNode`/`reflectNode` LLM-failure propagation and the empty-critique fallback (LLM mocked, no real network calls)
+- `app/api/agent/route.test.ts` — every validation/error path (missing topic, length cap, malformed JSON, missing API key, rate limit, mid-stream SSE error) plus the success-path response shape
+
+CI runs lint + `test:coverage` + build on every push/PR to `main` and uploads coverage to Codecov.
+
+---
+
 ## Getting Started
 
 ### 1. Clone and install
@@ -181,7 +227,7 @@ Open [http://localhost:3000](http://localhost:3000).
 3. Add `GROQ_API_KEY` and `NEXT_PUBLIC_TWITTER_HANDLE` in **Settings → Environment Variables**
 4. Deploy
 
-The API route uses Node.js runtime with `maxDuration: 120` to handle multi-iteration runs within Vercel's timeout limits.
+The API route uses Node.js runtime with `maxDuration: 60` — the max allowed on Vercel's free Hobby plan — which comfortably covers multi-iteration runs given Groq's response speed.
 
 ---
 
