@@ -1,15 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+const { mockInvoke } = vi.hoisted(() => ({
+  mockInvoke: vi.fn().mockResolvedValue({}),
+}));
+
 vi.mock("@/lib/agent", async () => {
   const actual = await vi.importActual<typeof import("@/lib/agent")>("@/lib/agent");
   return {
     ...actual,
-    buildGraph: () => ({ invoke: vi.fn().mockResolvedValue({}) }),
+    buildGraph: () => ({ invoke: mockInvoke }),
   };
 });
 
 const { POST } = await import("./route");
+
+// Reads all SSE "data: {...}" lines out of a streamed Response body.
+async function readSseEvents(res: Response): Promise<unknown[]> {
+  const text = await res.text();
+  return text
+    .split("\n\n")
+    .filter((line) => line.startsWith("data: "))
+    .map((line) => JSON.parse(line.slice(6)));
+}
 
 // Each test uses a unique IP (via x-forwarded-for) to avoid cross-test
 // interference with the shared rate-limit Map, except the dedicated
@@ -31,6 +44,7 @@ const originalApiKey = process.env.GROQ_API_KEY;
 
 beforeEach(() => {
   process.env.GROQ_API_KEY = "test-key";
+  mockInvoke.mockReset().mockResolvedValue({});
 });
 
 afterEach(() => {
@@ -86,5 +100,15 @@ describe("POST /api/agent validation", () => {
     const res = await POST(makeRequest({ topic: "valid topic", tone: "Punchy", maxIter: 1 }));
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("text/event-stream");
+  });
+
+  it("emits an SSE error event (not a thrown exception) when the agent graph fails mid-run", async () => {
+    mockInvoke.mockRejectedValueOnce(new Error("Groq API unavailable"));
+
+    const res = await POST(makeRequest({ topic: "valid topic", tone: "Punchy", maxIter: 1 }));
+    expect(res.status).toBe(200); // headers already sent before the graph runs
+
+    const events = await readSseEvents(res);
+    expect(events).toContainEqual({ type: "error", message: "Groq API unavailable" });
   });
 });

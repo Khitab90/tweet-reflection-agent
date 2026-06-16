@@ -44,7 +44,7 @@ function buildLLM() {
   });
 }
 
-async function generateNode(state: State): Promise<Partial<State>> {
+export async function generateNode(state: State): Promise<Partial<State>> {
   const { topic, tone, messages, curIter, emit } = state;
   const iter = curIter + 1;
   emit?.({ type: 'generate-start', iter });
@@ -85,7 +85,7 @@ Tone: ${tone}. Hard limit: 280 characters. No surrounding quotes. At most one ha
   };
 }
 
-async function reflectNode(state: State): Promise<Partial<State>> {
+export async function reflectNode(state: State): Promise<Partial<State>> {
   const { lastPost, curIter, emit } = state;
   emit?.({ type: 'reflect-start', iter: curIter });
 
