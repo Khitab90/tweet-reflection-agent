@@ -13,11 +13,12 @@ interface Props {
   onIterChange: (delta: number) => void;
   onRun: () => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  errorMessage: string | null;
 }
 
 export default function LeftPanel({
   topic, tone, maxIter, running,
-  onTopicChange, onToneChange, onIterChange, onRun, onKeyDown,
+  onTopicChange, onToneChange, onIterChange, onRun, onKeyDown, errorMessage,
 }: Props) {
   const canRun = !running && topic.trim().length > 0;
 
@@ -42,6 +43,7 @@ export default function LeftPanel({
           onKeyDown={onKeyDown}
           placeholder={"what should the tweet be about?\n\ne.g. landing a software dev job at IBM"}
           rows={4}
+          maxLength={500}
           style={{
             width: "100%", resize: "vertical", minHeight: 96,
             background: "#0a0d11", border: "1px solid #1d242e",
@@ -131,6 +133,16 @@ export default function LeftPanel({
       >
         {running ? "running…" : "▶  run agent"}
       </button>
+
+      {errorMessage && (
+        <div style={{
+          border: "1px solid #3a2222", background: "#1a1010",
+          borderRadius: 10, padding: "10px 13px",
+          color: "#f0746a", fontSize: 12.5, lineHeight: 1.5,
+        }}>
+          {errorMessage}
+        </div>
+      )}
     </aside>
   );
 }

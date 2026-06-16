@@ -100,11 +100,15 @@ Return ONLY 3 bullets, each starting with "- ".`;
   const response = await llm.invoke([new HumanMessage(prompt)]);
   const text = response.content as string;
 
-  const bullets = text
+  let bullets = text
     .split('\n')
     .map((l) => l.replace(/^[-•*\d.)\s]+/, '').trim())
     .filter(Boolean)
     .slice(0, 3);
+
+  if (bullets.length === 0) {
+    bullets = ['No actionable critique returned.'];
+  }
 
   for (const bullet of bullets) {
     emit?.({ type: 'reflect-bullet', iter: curIter, bullet });

@@ -19,6 +19,7 @@ interface AgentState {
   steps: Step[];
   finalPost: string;
   copied: boolean;
+  errorMessage: string | null;
 }
 
 export default function TweetAgent() {
@@ -32,6 +33,7 @@ export default function TweetAgent() {
     steps: [],
     finalPost: "",
     copied: false,
+    errorMessage: null,
   });
 
   // ref so SSE callbacks always see latest state without stale closure
@@ -61,7 +63,7 @@ export default function TweetAgent() {
 
     const { topic, tone, maxIter } = state;
     stepsRef.current = [];
-    patch({ running: true, steps: [], finalPost: "", copied: false, activeNode: "generate", curIter: 0 });
+    patch({ running: true, steps: [], finalPost: "", copied: false, activeNode: "generate", curIter: 0, errorMessage: null });
 
     try {
       const res = await fetch("/api/agent", {
@@ -70,7 +72,14 @@ export default function TweetAgent() {
         body: JSON.stringify({ topic, tone, maxIter }),
       });
 
-      if (!res.ok || !res.body) throw new Error("API error");
+      if (!res.ok || !res.body) {
+        let message = `Request failed (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body?.error) message = body.error;
+        } catch {}
+        throw new Error(message);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -134,8 +143,7 @@ export default function TweetAgent() {
               break;
 
             case "error":
-              console.error("Agent error:", event.message);
-              patch({ running: false, activeNode: "idle" });
+              patch({ running: false, activeNode: "idle", errorMessage: event.message });
               break;
           }
         }
@@ -147,8 +155,7 @@ export default function TweetAgent() {
         return s;
       });
     } catch (err) {
-      console.error(err);
-      patch({ running: false, activeNode: "idle" });
+      patch({ running: false, activeNode: "idle", errorMessage: (err as Error).message });
     }
   }, [state]);
 
@@ -160,9 +167,14 @@ export default function TweetAgent() {
   }
 
   function copyFinal() {
-    try { navigator.clipboard.writeText(state.finalPost); } catch {}
-    patch({ copied: true });
-    setTimeout(() => patch({ copied: false }), 1600);
+    navigator.clipboard.writeText(state.finalPost)
+      .then(() => {
+        patch({ copied: true });
+        setTimeout(() => patch({ copied: false }), 1600);
+      })
+      .catch(() => {
+        patch({ errorMessage: "Couldn't copy to clipboard." });
+      });
   }
 
   return (
@@ -200,6 +212,7 @@ export default function TweetAgent() {
           }}
           onRun={runAgent}
           onKeyDown={handleKeyDown}
+          errorMessage={state.errorMessage}
         />
 
         <RunLog
@@ -208,7 +221,7 @@ export default function TweetAgent() {
           onClear={() => {
             if (state.running) return;
             stepsRef.current = [];
-            patch({ steps: [], finalPost: "", activeNode: "idle", curIter: 0, copied: false });
+            patch({ steps: [], finalPost: "", activeNode: "idle", curIter: 0, copied: false, errorMessage: null });
           }}
         />
 
