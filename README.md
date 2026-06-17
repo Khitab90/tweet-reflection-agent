@@ -1,6 +1,6 @@
-# reflect.agent — Tweet Reflection Agent
+# reflect.agent - Tweet Reflection Agent
 
-A full-stack AI agent that iteratively drafts, critiques, and refines tweets using a LangGraph reflection loop. Enter a topic, pick a tone and iteration count, and the agent runs autonomously — each iteration generating a tweet and critiquing it — until the final polished post lands in the output panel.
+A full-stack AI agent that iteratively drafts, critiques, and refines tweets using a LangGraph reflection loop. Enter a topic, pick a tone and iteration count, and the agent runs autonomously - each iteration generating a tweet and critiquing it - until the final polished post lands in the output panel.
 
 ---
 
@@ -9,10 +9,10 @@ A full-stack AI agent that iteratively drafts, critiques, and refines tweets usi
 The agent takes a topic and tone as input and runs N user-configured iterations. Each iteration:
 
 1. **Generates** a tweet (under 280 characters, in the chosen tone)
-2. **Reflects** on it — producing 3 short, actionable critique bullets focused on hook, clarity, and engagement
+2. **Reflects** on it - producing 3 short, actionable critique bullets focused on hook, clarity, and engagement
 3. Uses the critique as feedback for the next generation
 
-The last iteration produces the final tweet (no critique after it — the output *is* the result). The best version lands in the **Final Post** panel, ready to copy.
+The last iteration produces the final tweet (no critique after it - the output *is* the result). The best version lands in the **Final Post** panel, ready to copy.
 
 ---
 
@@ -46,8 +46,8 @@ start → generate → reflect → router → generate → reflect → router �
 |-------|-----------|
 | Frontend | Next.js 16 (App Router), TypeScript, IBM Plex Mono |
 | Styling | Inline styles, CSS animations (`globals.css`), no component library |
-| Agent framework | LangGraph (`@langchain/langgraph`) — TypeScript |
-| LLM | Groq — `llama-3.3-70b-versatile` (free tier) |
+| Agent framework | LangGraph (`@langchain/langgraph`) - TypeScript |
+| LLM | Groq - `llama-3.3-70b-versatile` (free tier) |
 | LLM client | `@langchain/groq`, `@langchain/core` |
 | Streaming | Server-Sent Events (SSE) via Next.js Route Handler |
 | Testing | Vitest, `@vitest/coverage-v8` |
@@ -72,7 +72,7 @@ tweet-reflection-agent/
 │   ├── page.tsx                 # Entry point → renders <TweetAgent />
 │   ├── globals.css              # Animations: blink, fadeUp, glowPulse, spinSlow
 │   └── api/agent/
-│       ├── route.ts             # POST endpoint — validation, rate limiting, streams SSE
+│       ├── route.ts             # POST endpoint - validation, rate limiting, streams SSE
 │       └── route.test.ts        # Validation + error-path tests
 ├── components/
 │   ├── TweetAgent.tsx           # Root state container, SSE consumer
@@ -157,18 +157,18 @@ The UI shows a live `X / 280` counter that turns red if exceeded.
 
 ## Security & Reliability
 
-- **Rate limiting** — `lib/rateLimit.ts` caps each IP to 5 requests/minute on `/api/agent` (in-memory fixed window; sufficient for a single-instance deployment). Exceeding it returns `429` with a `Retry-After` header.
-- **Input validation** — topic is required, capped at 500 characters (server-enforced + client `maxLength`), and malformed JSON bodies return `400` instead of crashing the route.
-- **Fail-fast misconfiguration check** — missing `GROQ_API_KEY` returns a clear `500` instead of a cryptic error surfacing from deep inside the LLM SDK.
-- **User-facing error surfacing** — API errors, SSE `error` events, and clipboard-copy failures all show a message in the UI rather than only logging to the console.
-- **GitHub security tooling** — secret scanning + push protection, Dependabot vulnerability alerts and version-update PRs (grouped for `react`/`react-dom` and `@langchain/*` so peer-dependency bumps land together), CodeQL SAST scanning on every push/PR.
-- **Branch protection** — `main` blocks force-pushes and branch deletion.
+- **Rate limiting** - `lib/rateLimit.ts` caps each IP to 5 requests/minute on `/api/agent` (in-memory fixed window; sufficient for a single-instance deployment). Exceeding it returns `429` with a `Retry-After` header.
+- **Input validation** - topic is required, capped at 500 characters (server-enforced + client `maxLength`), and malformed JSON bodies return `400` instead of crashing the route.
+- **Fail-fast misconfiguration check** - missing `GROQ_API_KEY` returns a clear `500` instead of a cryptic error surfacing from deep inside the LLM SDK.
+- **User-facing error surfacing** - API errors, SSE `error` events, and clipboard-copy failures all show a message in the UI rather than only logging to the console.
+- **GitHub security tooling** - secret scanning + push protection, Dependabot vulnerability alerts and version-update PRs (grouped for `react`/`react-dom` and `@langchain/*` so peer-dependency bumps land together), CodeQL SAST scanning on every push/PR.
+- **Branch protection** - `main` blocks force-pushes and branch deletion.
 
 ---
 
 ## Testing
 
-Vitest, no `jsdom`/React Testing Library yet — current scope is pure logic (routing decisions, rate limiter) and API route validation/error paths, not component rendering.
+Vitest, no `jsdom`/React Testing Library yet - current scope is pure logic (routing decisions, rate limiter) and API route validation/error paths, not component rendering.
 
 ```bash
 npm test              # run once
@@ -177,9 +177,9 @@ npm run test:coverage # with coverage report
 ```
 
 24 tests across 3 files:
-- `lib/rateLimit.test.ts` — window limits, reset, independent keys
-- `lib/agent.test.ts` — `afterGenerateEdge`/`routerEdge` branch logic; `generateNode`/`reflectNode` LLM-failure propagation and the empty-critique fallback (LLM mocked, no real network calls)
-- `app/api/agent/route.test.ts` — every validation/error path (missing topic, length cap, malformed JSON, missing API key, rate limit, mid-stream SSE error) plus the success-path response shape
+- `lib/rateLimit.test.ts` - window limits, reset, independent keys
+- `lib/agent.test.ts` - `afterGenerateEdge`/`routerEdge` branch logic; `generateNode`/`reflectNode` LLM-failure propagation and the empty-critique fallback (LLM mocked, no real network calls)
+- `app/api/agent/route.test.ts` - every validation/error path (missing topic, length cap, malformed JSON, missing API key, rate limit, mid-stream SSE error) plus the success-path response shape
 
 CI runs lint + `test:coverage` + build on every push/PR to `main` and uploads coverage to Codecov.
 
@@ -208,7 +208,7 @@ GROQ_API_KEY=gsk_...
 NEXT_PUBLIC_TWITTER_HANDLE=you
 ```
 
-Get a free Groq API key at [console.groq.com](https://console.groq.com) — no credit card required.
+Get a free Groq API key at [console.groq.com](https://console.groq.com) - no credit card required.
 
 ### 3. Run
 
@@ -227,7 +227,7 @@ Open [http://localhost:3000](http://localhost:3000).
 3. Add `GROQ_API_KEY` and `NEXT_PUBLIC_TWITTER_HANDLE` in **Settings → Environment Variables**
 4. Deploy
 
-The API route uses Node.js runtime with `maxDuration: 60` — the max allowed on Vercel's free Hobby plan — which comfortably covers multi-iteration runs given Groq's response speed.
+The API route uses Node.js runtime with `maxDuration: 60` - the max allowed on Vercel's free Hobby plan - which comfortably covers multi-iteration runs given Groq's response speed.
 
 ---
 
