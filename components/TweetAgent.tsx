@@ -225,7 +225,7 @@ export default function TweetAgent() {
           }}
         />
 
-        <aside style={{
+        <aside className="sticky-panel" style={{
           position: "sticky", top: 78,
           flex: "1 1 300px", minWidth: 288, maxWidth: 344,
           display: "flex", flexDirection: "column", gap: 18,

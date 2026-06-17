@@ -51,3 +51,11 @@ button {
 ::-webkit-scrollbar-thumb { background: #1d242e; border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: #283140; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* On mobile (single-column layout) sticky panels overlap scrollable content.
+   Below 768px everything stacks, so sticky has no benefit — let it flow. */
+@media (max-width: 767px) {
+  .sticky-panel {
+    position: static !important;
+  }
+}

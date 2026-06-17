@@ -23,7 +23,7 @@ export default function LeftPanel({
   const canRun = !running && topic.trim().length > 0;
 
   return (
-    <aside style={{
+    <aside className="sticky-panel" style={{
       position: "sticky", top: 78,
       flex: "1 1 318px", minWidth: 300, maxWidth: 360,
       display: "flex", flexDirection: "column", gap: 18,
