@@ -28,7 +28,7 @@
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.9",
+    "eslint-config-next": "^16.2.10",
     "eslint-plugin-security": "^4.0.1",
     "tailwindcss": "^4",
     "typescript": "^6",
